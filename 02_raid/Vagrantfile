@@ -1,0 +1,77 @@
+# Describe VMs
+MACHINES = {
+  # VM name "kernel update"
+  :"linux-raid" => {
+              # VM box
+              #:box_name => "nem0xff/centos-7.7",
+              :box_name => "centos/8",
+              # VM CPU count
+              :cpus => 2,
+              # VM RAM size (Mb)
+              :memory => 512,
+              # networks
+              :net => [],
+              # forwarded ports
+              :forwarded_port => [],
+
+              :disks => {
+                "dsk1" => 5,
+                "dsk2" => 5,
+                "dsk3" => 5,
+                "dsk4" => 5
+                
+              },
+            }
+}
+
+Vagrant.configure("2") do |config|
+  MACHINES.each do |boxname, boxconfig|
+
+    config.vm.provision :shell, path: "./scripts/mkraid.sh"
+
+    # Disable shared folders
+    config.vbguest.auto_update = false
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+    
+    # Apply VM config
+    config.vm.define boxname do |box|
+      
+      # Set VM base box and hostname
+      box.vm.box = boxconfig[:box_name]
+      box.vm.host_name = boxname.to_s
+
+      # Additional network config if present
+      if boxconfig.key?(:net)
+        boxconfig[:net].each do |ipconf|
+          box.vm.network "private_network", ipconf
+        end
+      end
+
+      # Port-forward config if present
+      if boxconfig.key?(:forwarded_port)
+        boxconfig[:forwarded_port].each do |port|
+          box.vm.network "forwarded_port", port
+        end
+      end
+
+      # VM resources config
+      box.vm.provider "virtualbox" do |v|
+        # Set VM RAM size and CPU count
+        v.memory = boxconfig[:memory]
+        v.cpus = boxconfig[:cpus]
+
+        disk_port = 0
+        v.customize ['storagectl', :id, '--name', 'SATA additional disks', '--add', 'sata', '--portcount', 4]
+        boxconfig[:disks].each do |disk_name,disk_size|
+            
+          if not File.exist?("./disks/#{disk_name}.vdi")
+            v.customize ['createmedium', '--filename', "./disks/#{disk_name}.vdi", "--format", "VDI", '--size', disk_size * 1024, '--variant', 'Fixed']
+          end
+          
+          v.customize ['storageattach', :id,  '--storagectl', 'SATA additional disks', '--port', disk_port, '--device', 0, '--type', 'hdd', '--medium', "./disks/#{disk_name}.vdi"]  
+          disk_port += 1
+        end
+      end
+    end
+  end
+end
