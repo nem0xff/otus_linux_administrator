@@ -1,0 +1,9 @@
+#Vargant cache
+**/.vagrant/
+
+#Packer cache
+**/packer_cache/
+
+#Virtualbox images and disks
+*.box
+*.vdi
