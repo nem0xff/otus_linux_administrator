@@ -3,6 +3,7 @@
 /dev/mapper/VolGroup00-LogVol00 38G 738M 37G 2% /
 
 уменьшить том под / до 8G
+
 выделить том под /home
 выделить том под /var
 /var - сделать в mirror
