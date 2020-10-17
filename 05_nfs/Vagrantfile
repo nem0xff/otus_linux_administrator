@@ -1,0 +1,87 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+ENV["LC_ALL"] = "en_US.UTF-8"
+
+# Require the reboot plugin.
+require './vagrant-plugins/vagrant-provision-reboot-plugin'
+
+MACHINES = {
+    :server => {
+        :box_name => "centos/7",
+        :box_version => "1804.02",
+        :ip_addr => '192.168.11.101',
+        :disks => {},
+        :provisions => [
+          {:type=>:shell, :path=>"./scripts/server/00_copy_key_to_root.sh"},
+          {:type=>:shell, :path=>"./scripts/server/01_install_additional_tools.sh"},
+          {:type=>:shell, :path=>"./scripts/server/02_create_share.sh"},
+          {:type=>:shell, :path=>"./scripts/server/03_firewall.sh"},
+          {:type=>:unix_reboot}
+        ]
+    },
+    :client => {
+        :box_name => "centos/7",
+        :box_version => "1804.02",
+        :ip_addr => '192.168.11.102',
+        :disks => {},
+        :provisions => [
+          {:type=>:shell, :path=>"./scripts/client/00_copy_key_to_root.sh"},
+          {:type=>:shell, :path=>"./scripts/client/01_create_mountpoint.sh"},
+          {:type=>:shell, :path=>"./scripts/client/02_firewall.sh"},
+          {:type=>:unix_reboot}
+        ]
+
+    }
+}
+
+Vagrant.configure("2") do |config|
+
+    config.vm.box_version = "1804.02"
+    MACHINES.each do |boxname, boxconfig|
+
+        config.vbguest.auto_update = false
+        config.vm.synced_folder ".", "/vagrant", disabled: true
+
+        config.vm.define boxname do |box|
+
+            box.vm.box = boxconfig[:box_name]
+            box.vm.host_name = boxname.to_s
+
+            box.vm.network "private_network", ip: boxconfig[:ip_addr]
+
+            box.vm.provider :virtualbox do |vb|
+                vb.customize ["modifyvm", :id, "--memory", "256"]
+                needsController = false
+#                if boxconfig[:disks].length > 0
+                  boxconfig[:disks].each do |dname, dconf|
+
+                    if not File.exist?(dconf[:dfile])
+                        vb.customize ['createhd', '--filename', dconf[:dfile], '--variant', 'Fixed', '--size', dconf[:size]]
+                        needsController =  true
+                    end
+
+                  end
+                
+
+                  if needsController == true
+                    vb.customize ["storagectl", :id, "--name", "SATA", "--add", "sata" ]
+                    boxconfig[:disks].each do |dname, dconf|
+                            vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
+                    end
+                  end
+#                end
+            end
+
+          boxconfig[:provisions].each { |provision|
+            case provision[:type]
+              when :shell
+                box.vm.provision provision[:type] , path: provision[:path]
+              when :unix_reboot
+                box.vm.provision provision[:type]
+            end
+          }
+
+        end
+    end
+end
+
