@@ -14,31 +14,31 @@
 
 В загрузчике GRUB выбираем редактирование параметров загрузки (клавиша e) и в параметры загрузки ядра (linux/linux16) добавляем параметр `init=/bin/sh`
 
-[1](screenshots/boot1.png)
+![1](screenshots/boot1.png)
 
 После этого запускаем загрузку `Ctrl+X`
 
-[2](screenshots/boot2.png)
+![2](screenshots/boot2.png)
 
 ### Способ 2
 
 Аналогично первому способу добавлем параметр `rd.break`
 
-[3](screenshots/boot3.png)
+![3](screenshots/boot3.png)
 
 И загружаемся по `Ctrl+X`
 
-[4](screenshots/boot4.png)
+![4](screenshots/boot4.png)
 
 ### Способ 3
 
 Аналогично первым двум способам добавляем параметр "rw init=/sysroot/bin/sh"
 
-[5](screenshots/boot5.png)
+![5](screenshots/boot5.png)
 
 Выполняем загрузку по `Ctrl+X`
 
-[6](screenshots/boot6.png)
+![6](screenshots/boot6.png)
 
 ## Установить систему с LVM, после чего переименовать VG
 
