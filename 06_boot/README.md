@@ -55,7 +55,7 @@
 
 После перезагрузки система загружается с новым именем Volume Group
 
-[6](screenshots/boot7.png)
+![7](screenshots/boot7.png)
 
 ## Добавить модуль в initrd
 
